@@ -47,7 +47,7 @@ plot(dataset, col = dataset$Type)
 
 # cor
 dataset.cor = cor(dataset[, 1:4])
-dataset.cor.plot = corrplot(dataset.cor, addCoef.col = T)
+corrplot(dataset.cor, addCoef.col = T)
 
 ggplot(dataset, aes(x = Temp, y = AbsMagn, color = Type)) + geom_point()
 ggplot(dataset, aes(x = Lum, y = AbsMagn, color = Type)) + geom_point()
