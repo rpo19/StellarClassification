@@ -74,7 +74,8 @@ testset = dataset.scaled[ind == 2,]
 tuned = tune.svm(Type ~ Temp + AbsMagn, data = trainset, kernel='linear',
                  cost=c(0.001, 0.01, 0.1, 1,5,10,100, 200, 300), gamma = c(0.001, 0.01, 0.1, 1)) 
 tuned
-svm.model = svm(data = trainset, Type ~ Temp + AbsMagn, kernel = "linear", cost = tuned$best.parameters$cost, gamma = tuned$best.parameters$gamma)
+#svm.model = svm(data = trainset, Type ~ Temp + AbsMagn, kernel = "linear", cost = tuned$best.parameters$cost, gamma = tuned$best.parameters$gamma)
+svm.model = tuned$best.model
 summary(svm.model)
 plot(svm.model, trainset, Temp ~ AbsMagn)
 svm.pred = predict(svm.model, testset) 
