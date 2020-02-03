@@ -4,8 +4,7 @@ library("e1071")
 library("scales")
 
 
-
-
+#https://www.kaggle.com/deepu1109/star-dataset
 dataset = read.csv("stars.csv")
 colnames(dataset) = c("Temp", "Lum", "Rad", "AbsMagn", "Type", "Color", "SpectrClass")
 dataset = dataset[, c(1,2,3,4,6,7,5)]
