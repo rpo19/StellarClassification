@@ -2,6 +2,7 @@ library("ggplot2")
 library("corrplot")
 library("e1071")
 library("scales")
+library("stringr")
 
 
 #https://www.kaggle.com/deepu1109/star-dataset
@@ -12,6 +13,21 @@ dataset$Type = factor(dataset$Type)
 types = c("BrownDwarf", "RedDwarf", "WhiteDwarf","MainSequence", "Supergiant", "Hypergiant")
 dataset$Type = factor(sapply(dataset$Type, function (x) { types[x]}))
 dataset$SpectrClass = factor(dataset$SpectrClass, levels=c("O", "B", "A", "F", "G", "K", "M"))
+dataset$Color = tolower(dataset$Color)
+dataset$Color = gsub("-", " ", dataset$Color)
+dataset$Color = trimws(dataset$Color)
+
+# sort words in a string
+sortWordStr = function(str){
+  ret = str_split(str, " ")
+  ret = unlist(ret)
+  ret = str_sort(ret)
+  ret =  paste(ret, collapse = " ")
+  return(ret)
+}
+
+dataset$Color = sapply(dataset$Color, sortWordStr)
+dataset$Color = factor(dataset$Color)
 
 dataset.notarget = function(data) {
   return(data[1:length(data)-1])
