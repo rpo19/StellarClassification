@@ -1,8 +1,13 @@
+# TODO: aggiungere install.package per tutto... 
+# codice deve essere pronto all'uso su qualsiasi PC durante l'a presentazione l'orale
 library("ggplot2")
 library("corrplot")
 library("e1071")
 library("scales")
 library("stringr")
+library("caret")
+library("multiROC")
+library("C50") 
 
 
 #https://www.kaggle.com/deepu1109/star-dataset
@@ -87,15 +92,32 @@ testset = dataset.scaled[ind == 2,]
 # SVM test
 # tuning
 tuned = tune.svm(Type ~ Temp + AbsMagn, data = trainset, kernel='linear',
-                 cost=c(0.001, 0.01, 0.1, 1,5,10,100, 200, 300), gamma = c(0.001, 0.01, 0.1, 1)) 
+                 cost=c(0.001, 0.01, 0.1, 1,5,10,100, 200, 300), gamma = c(0.001, 0.01, 0.1, 1), probability = T) 
 tuned
 #svm.model = svm(data = trainset, Type ~ Temp + AbsMagn, kernel = "linear", cost = tuned$best.parameters$cost, gamma = tuned$best.parameters$gamma)
 svm.model = tuned$best.model
 summary(svm.model)
 plot(svm.model, trainset, Temp ~ AbsMagn)
-svm.pred = predict(svm.model, testset) 
+svm.pred = predict(svm.model, testset, probability = T ) 
 svm.table=table(svm.pred, testset$Type)
 svm.table
+# confusion matrix
+svm.result1 = confusionMatrix(svm.pred, testset$Type)
+svm.result1
+# confusion matrix with precision and recall
+svm.result2 = confusionMatrix(svm.pred, testset$Type, mode = "prec_recall")
+svm.result2
+# ROC
+# probabilities of instances target
+pred.prob = attr(svm.pred, "probabilities")
+# preparing dataframe for multiclass ROC and Precision
+predictive_scores = pred.prob
+colnames(predictive_scores) = paste(colnames(predictive_scores), "_pred_SVM", sep = "")
+true_labels = data.frame(pred.prob)
+colnames(true_labels) = paste(colnames(true_labels), "_true", sep = "")
+# NEED HELP: ogni riga deve avere 1 solo nella colonna della classe di appartenenza, 0 nel resto
+
+data.roc = data.frame(cbind(truelabels, pred.prob))
 
 
 
