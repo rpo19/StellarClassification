@@ -25,3 +25,11 @@ dataset.cor.plot = corrplot(dataset.cor)
 ggplot(dataset, aes(x = Temp, y = AbsMagn, color = Type)) + geom_point()
 ggplot(dataset, aes(x = Lum, y = AbsMagn, color = Type)) + geom_point()
 ggplot(dataset, aes(x = Rad, y = AbsMagn, color = Type)) + geom_point()
+
+# scale numeric attributes
+dataset.scaled = data.frame(cbind(scale(dataset[,1:4]), dataset[,5:7]))
+dataset.scaled.cor = cor(dataset.notarget(dataset[, 1:5]))
+dataset.scaled.cor.plot = corrplot(dataset.cor)
+ggplot(dataset.scaled, aes(x = Temp, y = AbsMagn, color = Type)) + geom_point()
+ggplot(dataset.scaled, aes(x = Lum, y = AbsMagn, color = Type)) + geom_point()
+ggplot(dataset.scaled, aes(x = Rad, y = AbsMagn, color = Type)) + geom_point()
