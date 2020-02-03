@@ -1,6 +1,7 @@
 library("ggplot2")
 library("corrplot")
-library(e1071)
+library("e1071")
+library("scales")
 
 
 
@@ -18,8 +19,15 @@ dataset.notarget = function(data) {
 }
 
 #check distribution of target
-targetTable = table(dataset$Type)
-pie(targetTable)
+targetTable = data.frame(table(dataset$Type))
+colnames(targetTable) = c("Type", "Value")
+
+targetPie = ggplot(targetTable, aes(x="", y=Value, fill=Type))+
+  geom_bar(width = 1, stat = "identity")+ coord_polar("y", start=0)+
+  geom_text(aes(y = Value/3 + c(0, cumsum(Value)[-length(Value)]), 
+                label = percent(Value/100)), size=5)
+
+# meglio se riusciamo a farlo con ggplot
 plot(dataset, col = dataset$Type)
 
 # cor
