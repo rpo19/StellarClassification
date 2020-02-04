@@ -120,11 +120,14 @@ svm.result1
 # confusion matrix with precision and recall
 svm.result2 = confusionMatrix(svm.pred, testset$Type, mode = "prec_recall")
 svm.result2
+
 # ROC
 # probabilities of instances target
 pred.prob = attr(svm.pred, "probabilities")
 # preparing dataframe for multiclass ROC and Precision
 predictive_scores = pred.prob
+# TODO FOR FIX: riordinare predictive_scores come true_labels
+predictive_scores
 colnames(predictive_scores) = paste(colnames(predictive_scores), "_pred_SVM", sep = "")
 true_labels = dummies::dummy(testset$Type)
 colnames(true_labels) = paste(colnames(pred.prob), "_true", sep = "")
