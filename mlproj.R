@@ -216,3 +216,36 @@ ggplot(plot_pr_df, aes(x=Recall, y=Precision)) +
         legend.title=element_blank(), 
         legend.background = element_rect(fill=NULL, size=0.5, 
                                          linetype="solid", colour ="black"))
+
+
+# 10-fold per svm con multi ROC
+
+controlsvm = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T)
+svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear",trControl = controlsvm)
+
+svmfold.prob = predict(svmfold.model, testset, type = "prob")
+
+# preprocessing per multiROC
+
+scores.svmfold = svmfold.prob
+colnames(scores.svmfold) = paste(colnames(scores.svmfold), "_pred_SVM", sep = "")
+true_labels_svmfold = dummies::dummy(testset$Type)
+colnames(true_labels_svmfold) = paste(colnames(svmfold.prob), "_true", sep = "")
+ROCsvmfold.data = data.frame(cbind(true_labels_svmfold, scores.svmfold))
+
+# multiROC
+
+svmfold_roc = multi_roc(ROCsvmfold.data, force_diag=T)
+plot_svmfoldroc_df <- plot_roc_data(svmfold_roc)
+
+
+ggplot(plot_svmfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
+  geom_path(aes(color = Group, linetype=Method), size=1.5) +
+  geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
+               colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
