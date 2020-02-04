@@ -97,16 +97,16 @@ ggplot(dataset, aes(x = Temp, color = Type, fill = Type)) + geom_density(alpha =
 ggplot(dataset, aes(x = Temp, y = AbsMagn, color = Type)) + geom_point()
 
 # split into trainingset and testset
-ind = sample(2, nrow(dataset.scaled), replace = TRUE, prob=c(0.7, 0.3))
+ind = sample(2, nrow(dataset.scaled), replace = TRUE, prob=c(0.65, 0.35))
 trainset = dataset.scaled[ind == 1,]
 testset = dataset.scaled[ind == 2,] 
 
-
+######################################################
 # SVM test
 # tuning
 tuned = tune.svm(Type ~ Temp + AbsMagn, data = trainset, kernel='linear',
                  cost=c(0.001, 0.01, 0.1, 1,5,10,100, 200, 300), gamma = c(0.001, 0.01, 0.1, 1), probability = T) 
-tuned
+
 #svm.model = svm(data = trainset, Type ~ Temp + AbsMagn, kernel = "linear", cost = tuned$best.parameters$cost, gamma = tuned$best.parameters$gamma)
 svm.model = tuned$best.model
 summary(svm.model)
@@ -127,10 +127,9 @@ pred.prob = attr(svm.pred, "probabilities")
 # preparing dataframe for multiclass ROC and Precision
 predictive_scores = pred.prob
 # TODO FOR FIX: riordinare predictive_scores come true_labels
-predictive_scores
 colnames(predictive_scores) = paste(colnames(predictive_scores), "_pred_SVM", sep = "")
 true_labels = dummies::dummy(testset$Type)
-colnames(true_labels) = paste(colnames(pred.prob), "_true", sep = "")
+colnames(true_labels) = paste(str_remove(colnames(true_labels), "Type"), "_true", sep = "")
 
 
 data.roc = data.frame(cbind(true_labels, predictive_scores))
@@ -142,8 +141,10 @@ plot_roc_df <- plot_roc_data(roc_res)
 plot_pr_df <- plot_pr_data(pr_res)
 
 
-ggplot(plot_roc_df, aes(x = 1-Specificity, y=Sensitivity)) +
-  geom_path(aes(color = Group, linetype=Method), size=1.5) +
+ggplot(plot_roc_df, aes(x = 1-Specificity, y=Sensitivity)) + 
+  xlab("FPR") +
+  ylab("TPR") +
+  geom_path(aes(color = Group, linetype=Method), size=1.3) +
   geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
                colour='grey', linetype = 'dotdash') +
   theme_bw() + 
@@ -154,7 +155,7 @@ ggplot(plot_roc_df, aes(x = 1-Specificity, y=Sensitivity)) +
                                          linetype="solid", colour ="black"))
 
 ggplot(plot_pr_df, aes(x=Recall, y=Precision)) + 
-  geom_path(aes(color = Group, linetype=Method), size=1.5) + 
+  geom_path(aes(color = Group, linetype=Method), size=1.3) + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5), 
         legend.justification=c(1, 0), legend.position=c(.95, .05),
@@ -182,6 +183,7 @@ dt.prob <- predict(prunedDecisionTree, testset, type = "prob")
 dt.confusion.matrix = confusionMatrix(dt.pred, testset$Type)
 dt.confusion.matrix
 
+############### START: è un copia incolla a caso??? ###################
 # ROC
 # probabilities of instances target
 # preparing dataframe for multiclass ROC and Precision
@@ -220,6 +222,7 @@ ggplot(plot_pr_df, aes(x=Recall, y=Precision)) +
         legend.background = element_rect(fill=NULL, size=0.5, 
                                          linetype="solid", colour ="black"))
 
+############### END: è un copia incolla a caso??? ###################
 
 # 10-fold per svm con multi ROC
 
@@ -233,7 +236,7 @@ svmfold.prob = predict(svmfold.model, testset, type = "prob")
 scores.svmfold = svmfold.prob
 colnames(scores.svmfold) = paste(colnames(scores.svmfold), "_pred_SVM", sep = "")
 true_labels_svmfold = dummies::dummy(testset$Type)
-colnames(true_labels_svmfold) = paste(colnames(svmfold.prob), "_true", sep = "")
+colnames(true_labels_svmfold) = paste(str_remove(colnames(true_labels_svmfold), "Type"), "_true", sep = "")
 ROCsvmfold.data = data.frame(cbind(true_labels_svmfold, scores.svmfold))
 
 # multiROC
@@ -243,6 +246,8 @@ plot_svmfoldroc_df <- plot_roc_data(svmfold_roc)
 
 
 ggplot(plot_svmfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
+  xlab("FPR") +
+  ylab("TPR") +
   geom_path(aes(color = Group, linetype=Method), size=1.5) +
   geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
                colour='grey', linetype = 'dotdash') +
