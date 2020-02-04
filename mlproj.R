@@ -17,7 +17,11 @@ dataset = dataset[, c(1,2,3,4,6,7,5)]
 dataset$Type = factor(dataset$Type)
 types = c("BrownDwarf", "RedDwarf", "WhiteDwarf","MainSequence", "Supergiant", "Hypergiant")
 dataset$Type = factor(sapply(dataset$Type, function (x) { types[x]}))
+
+# changed levels order to match the right classification
 dataset$SpectrClass = factor(dataset$SpectrClass, levels=c("O", "B", "A", "F", "G", "K", "M"))
+
+# cleaned colors
 dataset$Color = tolower(dataset$Color)
 dataset$Color = gsub("-", " ", dataset$Color)
 dataset$Color = trimws(dataset$Color)
@@ -38,14 +42,19 @@ dataset.notarget = function(data) {
   return(data[1:length(data)-1])
 }
 
-#check distribution of target
+# check distribution of target
 targetTable = data.frame(table(dataset$Type))
 colnames(targetTable) = c("Type", "Value")
+targetTable$Value = (targetTable$Value/sum(targetTable$Value))*100
 
+# Pie
 targetPie = ggplot(targetTable, aes(x="", y=Value, fill=Type))+
   geom_bar(width = 1, stat = "identity")+ coord_polar("y", start=0)+
-  geom_text(aes(y = Value/3 + c(0, cumsum(Value)[-length(Value)]), 
+  geom_text(aes(y = Value/6 + c(0, cumsum(Value)[-length(Value)]),
                 label = percent(Value/100)), size=5)
+# BarPlot
+targetBarPlot = ggplot(dataset, aes(Type))+ geom_bar(aes(fill = Type))
+
 
 # meglio se riusciamo a farlo con ggplot
 plot(dataset, col = dataset$Type)
@@ -64,6 +73,10 @@ dataset.scaled = data.frame(cbind(scale(dataset[,1:4]), dataset[,5:7]))
 
 # Ho provato a vedere se eraa vera la cosa di wikipedia che ho trovato. Sembra di sì. 
 ggplot(dataset, aes(x = SpectrClass, y = AbsMagn, color = Type)) + geom_point() + scale_y_reverse()
+
+# Sembra ci sia correlazione tra SpectrClass e Colore
+counts = table( dataset$SpectrClass, dataset$Color)
+barplot(counts, legend = levels(dataset$SpectrClass), main = "Title")
 
 # test pca: non dovrebbe servireeee
 # dataset.pca = PCA(dataset[,1:4])
@@ -121,3 +134,21 @@ data.roc = data.frame(cbind(truelabels, pred.prob))
 
 
 
+# decision tree prova
+library(rpart) 
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+decisionTree = rpart(Type ~ ., data=trainset, method="class")
+dt.pred <- predict(decisionTree, testset, type = "class") 
+dt.confusion.matrix = confusionMatrix(dt.pred, testset$Type)
+dt.confusion.matrix
+fancyRpartPlot(decisionTree)
+
+# pruning
+cp= decisionTree$cptable[which.min(decisionTree$cptable[,"xerror"]),"CP"]
+prunedDecisionTree = prune(decisionTree, cp= cp) 
+fancyRpartPlot(prunedDecisionTree)
+dt.pred <- predict(decisionTree, testset, type = "class") 
+dt.confusion.matrix = confusionMatrix(dt.pred, testset$Type)
+dt.confusion.matrix
