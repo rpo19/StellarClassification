@@ -8,7 +8,7 @@ library("stringr")
 library("caret")
 library("multiROC")
 library("C50") 
-
+library("dummies")
 
 #https://www.kaggle.com/deepu1109/star-dataset
 dataset = read.csv("stars.csv")
@@ -126,14 +126,39 @@ pred.prob = attr(svm.pred, "probabilities")
 # preparing dataframe for multiclass ROC and Precision
 predictive_scores = pred.prob
 colnames(predictive_scores) = paste(colnames(predictive_scores), "_pred_SVM", sep = "")
-true_labels = data.frame(pred.prob)
-colnames(true_labels) = paste(colnames(true_labels), "_true", sep = "")
-# NEED HELP: ogni riga deve avere 1 solo nella colonna della classe di appartenenza, 0 nel resto
-
-data.roc = data.frame(cbind(truelabels, pred.prob))
+true_labels = dummies::dummy(testset$Type)
+colnames(true_labels) = paste(colnames(pred.prob), "_true", sep = "")
 
 
+data.roc = data.frame(cbind(true_labels, predictive_scores))
 
+roc_res <- multi_roc(data.roc, force_diag=T)
+pr_res <- multi_pr(data.roc, force_diag=T)
+
+plot_roc_df <- plot_roc_data(roc_res)
+plot_pr_df <- plot_pr_data(pr_res)
+
+
+ggplot(plot_roc_df, aes(x = 1-Specificity, y=Sensitivity)) +
+  geom_path(aes(color = Group, linetype=Method), size=1.5) +
+  geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
+               colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+
+ggplot(plot_pr_df, aes(x=Recall, y=Precision)) + 
+  geom_path(aes(color = Group, linetype=Method), size=1.5) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+##########################################################################
 # decision tree prova
 library(rpart) 
 library(rattle)
@@ -149,6 +174,45 @@ fancyRpartPlot(decisionTree)
 cp= decisionTree$cptable[which.min(decisionTree$cptable[,"xerror"]),"CP"]
 prunedDecisionTree = prune(decisionTree, cp= cp) 
 fancyRpartPlot(prunedDecisionTree)
-dt.pred <- predict(decisionTree, testset, type = "class") 
+dt.pred <- predict(prunedDecisionTree, testset, type = "class") 
+dt.prob <- predict(prunedDecisionTree, testset, type = "prob") 
 dt.confusion.matrix = confusionMatrix(dt.pred, testset$Type)
 dt.confusion.matrix
+
+# ROC
+# probabilities of instances target
+# preparing dataframe for multiclass ROC and Precision
+predictive_scores = dt.prob
+colnames(predictive_scores) = paste(colnames(predictive_scores), "_pred_DT", sep = "")
+true_labels = dummies::dummy(testset$Type)
+colnames(true_labels) = paste(colnames(dt.prob), "_true", sep = "")
+
+
+data.roc = data.frame(cbind(true_labels, predictive_scores))
+
+roc_res <- multi_roc(data.roc, force_diag=T)
+pr_res <- multi_pr(data.roc, force_diag=T)
+
+plot_roc_df <- plot_roc_data(roc_res)
+plot_pr_df <- plot_pr_data(pr_res)
+
+
+ggplot(plot_roc_df, aes(x = 1-Specificity, y=Sensitivity)) +
+  geom_path(aes(color = Group, linetype=Method), size=1.5) +
+  geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
+               colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+
+ggplot(plot_pr_df, aes(x=Recall, y=Precision)) + 
+  geom_path(aes(color = Group, linetype=Method), size=1.5) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
