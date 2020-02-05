@@ -181,7 +181,7 @@ library(rpart)
 library(rattle)
 library(rpart.plot)
 library(RColorBrewer)
-decisionTree = rpart(Type ~ ., data=trainset, method="class")
+decisionTree = rpart(Type ~ AbsMagn + SpectrClass, data=trainset, method="class")
 dt.pred <- predict(decisionTree, testset, type = "class") 
 dt.confusion.matrix = confusionMatrix(dt.pred, testset$Type)
 dt.confusion.matrix
@@ -321,7 +321,7 @@ ggplot(plot_svmfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
 
 # 10-fold per decision tree con multi ROC
 
-dtfold.model = train(Type ~ ., data = trainset, method = "rpart",trControl = trainControl)
+dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl)
 dtfold.prob = predict(dtfold.model, testset, type = "prob")
 dtfold.pred = predict(dtfold.model, testset, probability = T)
 dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "prec_recall")
@@ -356,7 +356,7 @@ ggplot(plot_dtfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
 
 # 10-fold per random forest con multi ROC
 
-rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl)
+rffold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rf",trControl = trainControl)
 rffold.prob = predict(rffold.model, testset, type = "prob")
 rffold.pred = predict(rffold.model, testset, probability = T)
 rffold.confusion.matrix = confusionMatrix(rffold.pred, testset$Type, mode = "prec_recall")
@@ -392,4 +392,7 @@ ggplot(plot_rffoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
 cv.values = resamples(list(svm=svmfold.model, rpart = dtfold.model, rforest=rffold.model)) 
 dotplot(cv.values) 
 
-
+# print AUC macro
+svmfold_roc$AUC[1]$SVM$macro
+dtfold_roc$AUC[1]$DT$macro
+rffold_roc$AUC[1]$RF$macro
