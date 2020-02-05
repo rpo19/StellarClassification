@@ -9,6 +9,7 @@ library("caret")
 library("multiROC")
 library("C50") 
 library("dummies")
+library("randomForest")
 
 #https://www.kaggle.com/deepu1109/star-dataset
 dataset = read.csv("stars.csv")
@@ -127,7 +128,6 @@ svm.result2
 pred.prob = attr(svm.pred, "probabilities")
 # preparing dataframe for multiclass ROC and Precision
 predictive_scores = pred.prob
-# TODO FOR FIX: riordinare predictive_scores come true_labels
 colnames(predictive_scores) = paste(colnames(predictive_scores), "_pred_SVM", sep = "")
 true_labels = dummies::dummy(testset$Type)
 colnames(true_labels) = paste(str_remove(colnames(true_labels), "Type"), "_true", sep = "")
@@ -181,10 +181,9 @@ prunedDecisionTree = prune(decisionTree, cp= cp)
 fancyRpartPlot(prunedDecisionTree)
 dt.pred <- predict(prunedDecisionTree, testset, type = "class") 
 dt.prob <- predict(prunedDecisionTree, testset, type = "prob") 
-dt.confusion.matrix = confusionMatrix(dt.pred, testset$Type)
+dt.confusion.matrix = confusionMatrix(dt.pred, testset$Type, mode = "prec_recall")
 dt.confusion.matrix
 
-############### START: è un copia incolla a caso??? ###################
 # ROC
 # probabilities of instances target
 # preparing dataframe for multiclass ROC and Precision
@@ -223,15 +222,63 @@ ggplot(plot_pr_df, aes(x=Recall, y=Precision)) +
         legend.background = element_rect(fill=NULL, size=0.5, 
                                          linetype="solid", colour ="black"))
 
-############### END: è un copia incolla a caso??? ###################
+#########################################################
+# Random Forest
+rf <- randomForest(Type ~ ., data = trainset, importance = TRUE)
+rf.pred <- predict(rf, testset, type = "class") 
+rf.prob <- predict(rf, testset, type = "prob") 
+rf.confusion.matrix = confusionMatrix(rf.pred, testset$Type, mode = "prec_recall")
+rf.confusion.matrix
+# ROC
+# probabilities of instances target
+# preparing dataframe for multiclass ROC and Precision
+predictive_scores = rf.prob
+colnames(predictive_scores) = paste(colnames(predictive_scores), "_pred_RF", sep = "")
+true_labels = dummies::dummy(testset$Type)
+colnames(true_labels) = paste(colnames(rf.prob), "_true", sep = "")
 
+
+data.roc = data.frame(cbind(true_labels, predictive_scores))
+
+roc_res <- multi_roc(data.roc, force_diag=T)
+pr_res <- multi_pr(data.roc, force_diag=T)
+
+plot_roc_df <- plot_roc_data(roc_res)
+plot_pr_df <- plot_pr_data(pr_res)
+
+
+ggplot(plot_roc_df, aes(x = 1-Specificity, y=Sensitivity)) +
+  geom_path(aes(color = Group, linetype=Method), size=1.5) +
+  geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
+               colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+
+ggplot(plot_pr_df, aes(x=Recall, y=Precision)) + 
+  geom_path(aes(color = Group, linetype=Method), size=1.5) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+
+#########################################################
+### RIMUOVERE RIGA SUCCESSIVAAAA ###
+#testset = dataset.scaled
 # 10-fold per svm con multi ROC
 
-trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 10, verboseIter = T, classProbs = T)
+trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T)
 svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear", trControl = trainControl)
 
 svmfold.prob = predict(svmfold.model, testset, type = "prob")
-
+svmfold.pred = predict(svmfold.model, testset, probability = T)
+svmfold.confusion.matrix = confusionMatrix(svmfold.pred, testset$Type, mode = "prec_recall")
+svmfold.confusion.matrix
 
 # preprocessing per multiROC
 
@@ -262,9 +309,11 @@ ggplot(plot_svmfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
 
 # 10-fold per decision tree con multi ROC
 
-dtfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "rpart",trControl = trainControl)
+dtfold.model = train(Type ~ ., data = trainset, method = "rpart",trControl = trainControl)
 dtfold.prob = predict(dtfold.model, testset, type = "prob")
-
+dtfold.pred = predict(dtfold.model, testset, probability = T)
+dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "prec_recall")
+dtfold.confusion.matrix
 # preprocessing per multiROC
 
 scores.dtfold = dtfold.prob
@@ -293,6 +342,42 @@ ggplot(plot_dtfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
                                          linetype="solid", colour ="black"))
 
 
+# 10-fold per random forest con multi ROC
+
+rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl)
+rffold.prob = predict(rffold.model, testset, type = "prob")
+rffold.pred = predict(rffold.model, testset, probability = T)
+rffold.confusion.matrix = confusionMatrix(rffold.pred, testset$Type, mode = "prec_recall")
+rffold.confusion.matrix
+# preprocessing per multiROC
+
+scores.rffold = rffold.prob
+colnames(scores.rffold) = paste(colnames(scores.rffold), "_pred_RF", sep = "")
+true_labels_rffold = dummies::dummy(testset$Type)
+colnames(true_labels_rffold) = paste(str_remove(colnames(true_labels_rffold), "Type"), "_true", sep = "")
+ROCrffold.data = data.frame(cbind(true_labels_rffold, scores.rffold))
+
+# multiROC
+
+rffold_roc = multi_roc(ROCrffold.data, force_diag=T)
+plot_rffoldroc_df <- plot_roc_data(rffold_roc)
+
+
+ggplot(plot_rffoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
+  xlab("FPR") +
+  ylab("TPR") +
+  geom_path(aes(color = Group, linetype=Method), size=1.5) +
+  geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
+               colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+
 # compare models stats BOHHHHHHHHHH
-cv.values = resamples(list(svm=svmfold.model, rpart = dtfold.model)) 
-dotplot(cv.values, metric = "ROC") 
+cv.values = resamples(list(svm=svmfold.model, rpart = dtfold.model, rforest=rffold.model)) 
+dotplot(cv.values) 
+
+
