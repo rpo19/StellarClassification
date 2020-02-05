@@ -304,8 +304,9 @@ ROCsvmfold.data = data.frame(cbind(true_labels_svmfold, scores.svmfold))
 
 svmfold_roc = multi_roc(ROCsvmfold.data, force_diag=T)
 svmfold_pr = multi_pr(ROCsvmfold.data, force_diag=T)
-plot_svmfoldroc_df <- plot_roc_data(svmfold_roc)
 
+plot_svmfoldroc_df <- plot_roc_data(svmfold_roc)
+plot_svmfoldpr <- plot_pr_data(svmfold_pr)
 
 ggplot(plot_svmfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
   xlab("FPR") +
@@ -313,6 +314,15 @@ ggplot(plot_svmfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
   geom_path(aes(color = Group, linetype=Method), size=1.5) +
   geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
                colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+
+ggplot(plot_svmfoldpr, aes(x=Recall, y=Precision)) + 
+  geom_path(aes(color = Group, linetype=Method), size=1.5) + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5), 
         legend.justification=c(1, 0), legend.position=c(.95, .05),
@@ -339,7 +349,9 @@ ROCdtfold.data = data.frame(cbind(true_labels_dtfold, scores.dtfold))
 
 dtfold_roc = multi_roc(ROCdtfold.data, force_diag=T)
 dtfold_pr = multi_pr(ROCdtfold.data, force_diag=T)
+
 plot_dtfoldroc_df <- plot_roc_data(dtfold_roc)
+plot_dtfoldpr <- plot_pr_data(dtfold_pr)
 
 
 ggplot(plot_dtfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
@@ -355,6 +367,14 @@ ggplot(plot_dtfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
         legend.background = element_rect(fill=NULL, size=0.5, 
                                          linetype="solid", colour ="black"))
 
+ggplot(plot_dtfoldpr, aes(x=Recall, y=Precision)) + 
+  geom_path(aes(color = Group, linetype=Method), size=1.5) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
 
 # 10-fold per random forest con multi ROC
 
@@ -375,8 +395,9 @@ ROCrffold.data = data.frame(cbind(true_labels_rffold, scores.rffold))
 
 rffold_roc = multi_roc(ROCrffold.data, force_diag=T)
 rffold_pr = multi_pr(ROCrffold.data, force_diag=T)
-plot_rffoldroc_df <- plot_roc_data(rffold_roc)
 
+plot_rffoldroc_df <- plot_roc_data(rffold_roc)
+plot_rffoldpr <- plot_pr_data(rffold_pr)
 
 ggplot(plot_rffoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
   xlab("FPR") +
@@ -384,6 +405,15 @@ ggplot(plot_rffoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
   geom_path(aes(color = Group, linetype=Method), size=1.5) +
   geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
                colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+
+ggplot(plot_rffoldpr, aes(x=Recall, y=Precision)) + 
+  geom_path(aes(color = Group, linetype=Method), size=1.5) + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5), 
         legend.justification=c(1, 0), legend.position=c(.95, .05),
