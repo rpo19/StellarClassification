@@ -97,7 +97,8 @@ ggplot(dataset, aes(x = Temp, color = Type, fill = Type)) + geom_density(alpha =
 ggplot(dataset, aes(x = Temp, y = AbsMagn, color = Type)) + geom_point()
 
 # split into trainingset and testset
-ind = sample(2, nrow(dataset.scaled), replace = TRUE, prob=c(0.65, 0.35))
+set.seed(2)
+ind = sample(2, nrow(dataset.scaled), replace = TRUE, prob=c(0.7, 0.3))
 trainset = dataset.scaled[ind == 1,]
 testset = dataset.scaled[ind == 2,] 
 
@@ -226,7 +227,7 @@ ggplot(plot_pr_df, aes(x=Recall, y=Precision)) +
 
 # 10-fold per svm con multi ROC
 
-trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T)
+trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 10, verboseIter = T, classProbs = T)
 svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear", trControl = trainControl)
 
 svmfold.prob = predict(svmfold.model, testset, type = "prob")
