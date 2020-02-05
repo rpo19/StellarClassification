@@ -303,6 +303,7 @@ ROCsvmfold.data = data.frame(cbind(true_labels_svmfold, scores.svmfold))
 # multiROC
 
 svmfold_roc = multi_roc(ROCsvmfold.data, force_diag=T)
+svmfold_pr = multi_pr(ROCsvmfold.data, force_diag=T)
 plot_svmfoldroc_df <- plot_roc_data(svmfold_roc)
 
 
@@ -337,6 +338,7 @@ ROCdtfold.data = data.frame(cbind(true_labels_dtfold, scores.dtfold))
 # multiROC
 
 dtfold_roc = multi_roc(ROCdtfold.data, force_diag=T)
+dtfold_pr = multi_pr(ROCdtfold.data, force_diag=T)
 plot_dtfoldroc_df <- plot_roc_data(dtfold_roc)
 
 
@@ -372,6 +374,7 @@ ROCrffold.data = data.frame(cbind(true_labels_rffold, scores.rffold))
 # multiROC
 
 rffold_roc = multi_roc(ROCrffold.data, force_diag=T)
+rffold_pr = multi_pr(ROCrffold.data, force_diag=T)
 plot_rffoldroc_df <- plot_roc_data(rffold_roc)
 
 
@@ -396,3 +399,4 @@ dotplot(cv.values)
 svmfold_roc$AUC[1]$SVM$macro
 dtfold_roc$AUC[1]$DT$macro
 rffold_roc$AUC[1]$RF$macro
+
