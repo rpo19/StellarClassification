@@ -226,10 +226,11 @@ ggplot(plot_pr_df, aes(x=Recall, y=Precision)) +
 
 # 10-fold per svm con multi ROC
 
-controlsvm = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T)
-svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear",trControl = controlsvm)
+trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T)
+svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear", trControl = trainControl)
 
 svmfold.prob = predict(svmfold.model, testset, type = "prob")
+
 
 # preprocessing per multiROC
 
@@ -257,3 +258,40 @@ ggplot(plot_svmfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
         legend.title=element_blank(), 
         legend.background = element_rect(fill=NULL, size=0.5, 
                                          linetype="solid", colour ="black"))
+
+# 10-fold per decision tree con multi ROC
+
+dtfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "rpart",trControl = trainControl)
+dtfold.prob = predict(dtfold.model, testset, type = "prob")
+
+# preprocessing per multiROC
+
+scores.dtfold = dtfold.prob
+colnames(scores.dtfold) = paste(colnames(scores.dtfold), "_pred_DT", sep = "")
+true_labels_dtfold = dummies::dummy(testset$Type)
+colnames(true_labels_dtfold) = paste(str_remove(colnames(true_labels_dtfold), "Type"), "_true", sep = "")
+ROCdtfold.data = data.frame(cbind(true_labels_dtfold, scores.dtfold))
+
+# multiROC
+
+dtfold_roc = multi_roc(ROCdtfold.data, force_diag=T)
+plot_dtfoldroc_df <- plot_roc_data(dtfold_roc)
+
+
+ggplot(plot_dtfoldroc_df, aes(x = 1-Specificity, y=Sensitivity)) +
+  xlab("FPR") +
+  ylab("TPR") +
+  geom_path(aes(color = Group, linetype=Method), size=1.5) +
+  geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
+               colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+
+
+# compare models stats BOHHHHHHHHHH
+cv.values = resamples(list(svm=svmfold.model, rpart = dtfold.model)) 
+dotplot(cv.values, metric = "ROC") 
