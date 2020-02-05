@@ -72,13 +72,6 @@ ggplot(dataset, aes(x = Rad, y = AbsMagn, color = Type)) + geom_point()
 dataset.scaled = data.frame(cbind(scale(dataset[,1:4]), dataset[,5:7]))
 
 
-# Ho provato a vedere se eraa vera la cosa di wikipedia che ho trovato. Sembra di sì. 
-ggplot(dataset, aes(x = SpectrClass, y = AbsMagn, color = Type)) + geom_point() + scale_y_reverse()
-
-# Sembra ci sia correlazione tra SpectrClass e Colore
-counts = table( dataset$SpectrClass, dataset$Color)
-barplot(counts, legend = levels(dataset$SpectrClass), main = "Title")
-
 # test pca: non dovrebbe servireeee
 # dataset.pca = PCA(dataset[,1:4])
 # fviz_eig(dataset.pca, addlabels = TRUE, ylim = c(0, 50)) 
@@ -89,6 +82,7 @@ barplot(counts, legend = levels(dataset$SpectrClass), main = "Title")
 #              legend.title = "Groups"           ) 
 # 
 
+#### considerazioni su attributi numerici
 # distribution of feature per type
 ggplot(dataset, aes(x = AbsMagn, color = Type, fill = Type)) + geom_density(alpha = 0.2) + theme_minimal()
 # -> AbsMagn divide il target abbastanza bene, tranne per l'overlapping che c'è tra RedDwarf e WhiteDwarf
@@ -97,6 +91,24 @@ ggplot(dataset, aes(x = Temp, color = Type, fill = Type)) + geom_density(alpha =
 # --> teniamo questo --> SBAM, sulle Y distinguo 4 classi, sulle X 2
 ggplot(dataset, aes(x = Temp, y = AbsMagn, color = Type)) + geom_point()
 
+#### considerazioni su attributi categorici
+ggplot(dataset, aes(x = AbsMagn, color = Type, fill = Type)) + geom_density(alpha = 0.2) + theme_minimal()
+barplot(table(dataset$SpectrClass, dataset$Type), legend = levels(dataset$SpectrClass), main = "Title")
+# -> potrbbero bastare AbsMagn e SpectrClass per fare albero... 
+#   "Dove AbsMagn non riesce a distingure, se non è M allora è WhiteDwarf"
+
+
+# Ho provato a vedere se eraa vera la cosa di wikipedia che ho trovato. Sembra di sì. 
+ggplot(dataset, aes(x = SpectrClass, y = AbsMagn, color = Type)) + geom_point() + scale_y_reverse()
+
+# Sembra ci sia correlazione tra SpectrClass e Colore
+counts = table( dataset$SpectrClass, dataset$Color)
+barplot(counts, legend = levels(dataset$SpectrClass), main = "Title")
+# Dato che colore era un attributo sporco (mischiava white-blue blue-white ecc., abbiamo provato a pulirlo)
+#   lo scartiamo e teniamo solo SpectrClass
+
+
+#################################
 # split into trainingset and testset
 set.seed(2)
 ind = sample(2, nrow(dataset.scaled), replace = TRUE, prob=c(0.7, 0.3))
