@@ -1,18 +1,23 @@
-# Install and load necessary packeges
-#install.packages("ggplot2")
-#install.packages("corrplot")
-#install.packages("e1071")
-#install.packages("scales")
-#install.packages("stringr")
-#install.packages("caret")
-#install.packages("multiROC")
-#install.packages("C50")
-#install.packages("dummies")
-#install.packages("randomForest")
-#install.packages("rpart")
-#install.packages("rattle")
-#install.packages("rpart.plot")
-#install.packages("RColorBrewer")
+install_packs = FALSE
+
+if(install_packs){
+  # Install and load necessary packages
+  install.packages("ggplot2")
+  install.packages("corrplot")
+  install.packages("e1071")
+  install.packages("scales")
+  install.packages("stringr")
+  install.packages("caret")
+  install.packages("multiROC")
+  install.packages("C50")
+  install.packages("dummies")
+  install.packages("randomForest")
+  install.packages("rpart")
+  install.packages("rattle")
+  install.packages("rpart.plot")
+  install.packages("RColorBrewer")
+}
+
 
 library("ggplot2")
 library("corrplot")
