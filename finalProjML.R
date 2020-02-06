@@ -258,7 +258,13 @@ ROC.results$AUC$SVM$macro
 ROC.results$AUC$DT$macro
 ROC.results$AUC$RF$macro
 
-# TODO: fare grafico con solo macro
+macro.plot = cbind(ROC.results$AUC$SVM$macro, ROC.results$AUC$DT$macro, ROC.results$AUC$RF$macro)
+colnames(macro.plot) = c("SVM", "DT", "RF")
+
+barplot(macro.plot)
+
+# TODO: fare grafico con solo macro (fatto?)
+
 ROC.results.merge = cbind(1-ROC.results$Specificity$SVM$macro, ROC.results$Sensitivity$SVM$macro, "SVM")
 ROC.results.merge = rbind(ROC.results.merge, cbind(1-ROC.results$Specificity$DT$macro, ROC.results$Sensitivity$SVM$macro, "DT"))
 ROC.results.merge = rbind(ROC.results.merge, cbind(1-ROC.results$Specificity$RF$macro, ROC.results$Sensitivity$SVM$macro, "RF"))
