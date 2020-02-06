@@ -1,0 +1,266 @@
+# Install and load necessary packeges
+
+install.packages("ggplot2")
+library("ggplot2")
+install.packages("corrplot")
+library("corrplot")
+install.packages("e1071")
+library("e1071")
+install.packages("scales")
+library("scales")
+install.packages("stringr")
+library("stringr")
+install.packages("caret")
+library("caret")
+install.packages("multiROC")
+library("multiROC")
+install.packages("C50")
+library("C50")
+install.packages("dummies")
+library("dummies")
+install.packages("randomForest")
+library("randomForest")
+install.packages("rpart")
+library("rpart") 
+install.packages("rattle")
+library("rattle")
+install.packages("rpart.plot")
+library("rpart.plot")
+install.packages("RColorBrewer")
+library("RColorBrewer")
+
+#### https://www.kaggle.com/deepu1109/star-dataset
+
+#### PREPARAZIONE DATASET
+
+# TODO: valutare se togliere dal dataset la colonna colore
+setwd("./") # TODO: settare working dir to current dir
+dataset = read.csv("stars.csv")
+colnames(dataset) = c("Temp", "Lum", "Rad", "AbsMagn", "Type", "Color", "SpectrClass")
+dataset = dataset[, c(1,2,3,4,6,7,5)]
+dataset$Type = factor(dataset$Type)
+types = c("BrownDwarf", "RedDwarf", "WhiteDwarf","MainSequence", "Supergiant", "Hypergiant")
+dataset$Type = factor(sapply(dataset$Type, function (x) { types[x]}))
+# scaling dataset
+dataset.scaled = data.frame(cbind(scale(dataset[,1:4]), dataset[,5:7]))
+
+# cambio livelli SpectrClass secondo la giusta classificazione
+dataset$SpectrClass = factor(dataset$SpectrClass, levels=c("O", "B", "A", "F", "G", "K", "M"))
+
+# pulizia valori colori
+dataset$Color = tolower(dataset$Color)
+dataset$Color = gsub("-", " ", dataset$Color)
+dataset$Color = trimws(dataset$Color)
+sortWordStr = function(str){
+  ret = str_split(str, " ")
+  ret = unlist(ret)
+  ret = str_sort(ret)
+  ret =  paste(ret, collapse = " ")
+  return(ret)
+}
+dataset$Color = sapply(dataset$Color, sortWordStr)
+dataset$Color = factor(dataset$Color)
+
+#### ANALISI ESPLORATIVA
+
+# verifica distribuzione della classe target
+type.distributionTable = data.frame(table(dataset$Type))
+colnames(type.distributionTable) = c("Type", "Value")
+type.distributionTable
+type.distributionBarPlot = ggplot(dataset, aes(Type))+ geom_bar(aes(fill = Type))
+type.distributionBarPlot # La distribuzione delle classi risulta bilanciata
+
+# verifica correlazione tra le covariate numeriche
+dataset.cor = cor(dataset[, 1:4])
+correlationMatrix = corrplot(dataset.cor, addCoef.col = T) # non ci sono covariate fortemente correlate ## TODO: 0.69 è tanto?????
+correlationMatrix
+
+# verifico la separazione delle classi in base a coppie di covariate
+type.plotPairs = featurePlot(x = dataset.scaled[,1:4], y = dataset.scaled[,7] ,
+            plot = "pairs",
+            auto.key=list(columns=3))
+type.plotPairs
+type.plotByAbsMagnLum = ggplot(dataset.scaled, aes(x = Lum, y = AbsMagn, color = Type)) + geom_point()
+type.plotByAbsMagnRad = ggplot(dataset.scaled, aes(x = Rad, y = AbsMagn, color = Type)) + geom_point()
+type.plotByAbsMagnTemp = ggplot(dataset.scaled, aes(x = Temp, y = AbsMagn, color = Type)) + geom_point()
+type.plotByAbsMagnLum
+type.plotByAbsMagnRad
+type.plotByAbsMagnTemp # AbsMagn e Temp sono le features che separano linearmente i punti
+# Approfondendo le distribuzioni si può verificare AbsMagn divide il target abbastanza bene,
+# tranne per l'overlapping che c'è tra RedDwarf e WhiteDwarf
+type.distributionAbsMagn = ggplot(dataset.scaled, aes(x = AbsMagn, color = Type, fill = Type)) + geom_density(alpha = 0.2) + theme_minimal()
+type.distributionTemp = ggplot(dataset.scaled[dataset.scaled$Type %in% c("RedDwarf", "WhiteDwarf"),], aes(x = Temp, color = Type, fill = Type)) + geom_density(alpha = 0.2) + theme_minimal()
+type.distributionAbsMagn
+type.distributionTemp # dopo le seguenti osservazioni, notiamo che potremmo usare un modello svm per classificare con queste due features
+
+# considerazioni su covariate categoriche
+type.barplotSpectrClass = barplot(table(dataset$SpectrClass, dataset$Type), legend = levels(dataset$SpectrClass), main = "Title") 
+# notiamo che anche la covariata SpectrClass distingue bene Red Dwarf e White Dwarf.
+# SpectrClass potrebbe quindi essere usata insieme ad altre covariate numeriche per modelli che gestiscono features miste                                                                                                        
+
+# altro punto di vista per confermare quanto appena detto
+# https://en.wikipedia.org/wiki/Stellar_classification
+type.plotByAbsMagnSpectrClass = ggplot(dataset, aes(x = SpectrClass, y = AbsMagn, color = Type)) + geom_point() + scale_y_reverse()
+type.plotByAbsMagnSpectrClass
+
+# TODO: spiegare scarto colore
+
+#### SPLIT DATASET
+
+set.seed(2)
+ind = sample(2, nrow(dataset.scaled), replace = TRUE, prob=c(0.7, 0.3)) # 70% trainset, 30% testset
+trainset = dataset.scaled[ind == 1,]
+testset = dataset.scaled[ind == 2,] 
+
+# SVM
+tuned.svm = tune.svm(Type ~ Temp + AbsMagn, data = trainset, kernel='linear',
+                 cost=c(0.001, 0.01, 0.1, 1,5,10,100), gamma = c(0.001, 0.01, 0.1, 1), probability = T) 
+svm.model = tuned.svm$best.model
+summary(svm.model)
+plot(svm.model, trainset, Temp ~ AbsMagn)
+svm.pred = predict(svm.model, testset, probability = T ) 
+# confusion matrix con precision and recall
+svm.confusionMatrix = confusionMatrix(svm.pred, testset$Type, mode = "prec_recall")
+svm.confusionMatrix
+
+# DECISION TREE
+# TODO: vedere perchè questi due attributi
+dt.model = rpart(Type ~ AbsMagn + SpectrClass, data=trainset, method="class")
+dt.pred <- predict(dt.model, testset, type = "class") 
+dt.confusion.matrix = confusionMatrix(dt.pred, testset$Type, mode = "prec_recall")
+dt.confusion.matrix
+fancyRpartPlot(dt.model)
+
+# TODO: vedere pruning
+
+# RANDOM FOREST
+rf.model <- randomForest(Type ~ ., data = trainset, importance = TRUE)
+rf.pred <- predict(rf.model, testset, type = "class") 
+rf.confusion.matrix = confusionMatrix(rf.pred, testset$Type, mode = "prec_recall")
+rf.confusion.matrix
+
+# TODO: vedere tuning
+
+#### COMPARING MODELS
+
+# 10-fold cross validation con svm
+trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T)
+svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear", trControl = trainControl)
+# svmfold.prob = predict(svmfold.model, testset, type = "prob")
+svmfold.pred = predict(svmfold.model, testset, probability = T)
+svmfold.confusion.matrix = confusionMatrix(svmfold.pred, testset$Type, mode = "prec_recall")
+svmfold.confusion.matrix
+
+# 10-fold cross validation con decistion tree
+# TODO: vedere perchè usiamo le due covariate
+dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl)
+# dtfold.prob = predict(dtfold.model, testset, type = "prob")
+dtfold.pred = predict(dtfold.model, testset, probability = T)
+dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "prec_recall")
+dtfold.confusion.matrix
+
+# 10-fold cross validation con random forest
+# TODO: vedere che covariate e il perchè
+rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl)
+# rffold.prob = predict(rffold.model, testset, type = "prob")
+rffold.pred = predict(rffold.model, testset, probability = T)
+rffold.confusion.matrix = confusionMatrix(rffold.pred, testset$Type, mode = "prec_recall")
+rffold.confusion.matrix
+
+# preparazione dati per multiROC
+svmfold.prob = predict(svmfold.model, testset, type = "prob")
+dtfold.prob = predict(dtfold.model, testset, type = "prob")
+rffold.prob = predict(rffold.model, testset, type = "prob")
+colnames(svmfold.prob) = paste(colnames(svmfold.prob), "_pred_SVM", sep = "")
+colnames(dtfold.prob) = paste(colnames(dtfold.prob), "_pred_DT", sep = "")
+colnames(rffold.prob) = paste(colnames(rffold.prob), "_pred_RF", sep = "")
+trueLabels = dummies::dummy(testset$Type)
+colnames(trueLabels) = paste(str_remove(colnames(trueLabels), "Type"), "_true", sep = "")
+ROC.data = data.frame(cbind(trueLabels, svmfold.prob, dtfold.prob, rffold.prob))
+
+# ROC/PR
+ROC.results = multi_roc(ROC.data, force_diag=T)
+ROC.results.plot <- plot_roc_data(ROC.results)
+PR.results = multi_pr(ROC.data, force_diag=T)
+PR.results.plot <- plot_pr_data(PR.results)
+
+# plot ROC
+ggplot(ROC.results.plot[ROC.results.plot$Method=="SVM",], aes(x = 1-Specificity, y=Sensitivity)) +
+  xlab("FPR") +
+  ylab("TPR") +
+  geom_path(aes(color = Group, linetype=Method), size=1.5) +
+  geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
+               colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+ggplot(ROC.results.plot[ROC.results.plot$Method=="DT",], aes(x = 1-Specificity, y=Sensitivity)) +
+  xlab("FPR") +
+  ylab("TPR") +
+  geom_path(aes(color = Group, linetype=Method), size=1.5) +
+  geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
+               colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+ggplot(ROC.results.plot[ROC.results.plot$Method=="RF",], aes(x = 1-Specificity, y=Sensitivity)) +
+  xlab("FPR") +
+  ylab("TPR") +
+  geom_path(aes(color = Group, linetype=Method), size=1.5) +
+  geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), 
+               colour='grey', linetype = 'dotdash') +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+
+# plot PR
+ggplot(PR.results.plot[PR.results.plot$Method =="SVM",], aes(x=Recall, y=Precision)) + 
+  geom_path(aes(color = Group, linetype=Method), size=1.5) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+ggplot(PR.results.plot[PR.results.plot$Method =="DT",], aes(x=Recall, y=Precision)) + 
+  geom_path(aes(color = Group, linetype=Method), size=1.5) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+ggplot(PR.results.plot[PR.results.plot$Method =="RF",], aes(x=Recall, y=Precision)) + 
+  geom_path(aes(color = Group, linetype=Method), size=1.5) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.justification=c(1, 0), legend.position=c(.95, .05),
+        legend.title=element_blank(), 
+        legend.background = element_rect(fill=NULL, size=0.5, 
+                                         linetype="solid", colour ="black"))
+# print AUC macro
+ROC.results$AUC$SVM$macro
+ROC.results$AUC$DT$macro
+ROC.results$AUC$RF$macro
+
+# TODO: fare grafico con solo macro
+ROC.results.merge = cbind(1-ROC.results$Specificity$SVM$macro, ROC.results$Sensitivity$SVM$macro, "SVM")
+ROC.results.merge = rbind(ROC.results.merge, cbind(1-ROC.results$Specificity$DT$macro, ROC.results$Sensitivity$SVM$macro, "DT"))
+ROC.results.merge = rbind(ROC.results.merge, cbind(1-ROC.results$Specificity$RF$macro, ROC.results$Sensitivity$SVM$macro, "RF"))
+colnames(ROC.results.merge) = c("FPR", "TPR", "Method")
+ROC.results.merge = data.frame(ROC.results.merge)
+ROC.results.merge$Method = factor(ROC.results.merge$Method)
+
+ggplot(data=ROC.results.merge, aes(x=FPR, y=TPR, group = Method, colour = Method)) +
+  geom_line(aes(group = Method))
+
+
