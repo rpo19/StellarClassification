@@ -109,6 +109,7 @@ type.plotByAbsMagnSpectrClass = ggplot(dataset, aes(x = SpectrClass, y = AbsMagn
 type.plotByAbsMagnSpectrClass
 
 # TODO: spiegare scarto colore
+# mi aspetto che colore sia coerente con lo spettro ed e' quindi sufficiente utilizzare quest'ultimo; da dimostrare
 
 #### SPLIT DATASET
 
