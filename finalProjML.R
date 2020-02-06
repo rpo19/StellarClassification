@@ -72,7 +72,7 @@ type.distributionBarPlot # La distribuzione delle classi risulta bilanciata
 
 # verifica correlazione tra le covariate numeriche
 dataset.cor = cor(dataset[, 1:4])
-correlationMatrix = corrplot(dataset.cor, addCoef.col = T) # non ci sono covariate fortemente correlate ## TODO: 0.69 è tanto?????
+correlationMatrix = corrplot(dataset.cor, addCoef.col = T) # non ci sono covariate fortemente correlate ## TODO: 0.69 e' tanto?????
 correlationMatrix
 
 # verifico la separazione delle classi in base a coppie di covariate
@@ -86,8 +86,8 @@ type.plotByAbsMagnTemp = ggplot(dataset.scaled, aes(x = Temp, y = AbsMagn, color
 type.plotByAbsMagnLum
 type.plotByAbsMagnRad
 type.plotByAbsMagnTemp # AbsMagn e Temp sono le features che separano linearmente i punti
-# Approfondendo le distribuzioni si può verificare AbsMagn divide il target abbastanza bene,
-# tranne per l'overlapping che c'è tra RedDwarf e WhiteDwarf
+# Approfondendo le distribuzioni si puo' verificare AbsMagn divide il target abbastanza bene,
+# tranne per l'overlapping che c'e' tra RedDwarf e WhiteDwarf
 type.distributionAbsMagn = ggplot(dataset.scaled, aes(x = AbsMagn, color = Type, fill = Type)) + geom_density(alpha = 0.2) + theme_minimal()
 type.distributionTemp = ggplot(dataset.scaled[dataset.scaled$Type %in% c("RedDwarf", "WhiteDwarf"),], aes(x = Temp, color = Type, fill = Type)) + geom_density(alpha = 0.2) + theme_minimal()
 type.distributionAbsMagn
@@ -124,7 +124,7 @@ svm.confusionMatrix = confusionMatrix(svm.pred, testset$Type, mode = "prec_recal
 svm.confusionMatrix
 
 # DECISION TREE
-# TODO: vedere perchè questi due attributi
+# TODO: vedere perche' questi due attributi
 dt.model = rpart(Type ~ AbsMagn + SpectrClass, data=trainset, method="class")
 dt.pred <- predict(dt.model, testset, type = "class") 
 dt.confusion.matrix = confusionMatrix(dt.pred, testset$Type, mode = "prec_recall")
@@ -152,7 +152,7 @@ svmfold.confusion.matrix = confusionMatrix(svmfold.pred, testset$Type, mode = "p
 svmfold.confusion.matrix
 
 # 10-fold cross validation con decistion tree
-# TODO: vedere perchè usiamo le due covariate
+# TODO: vedere perche' usiamo le due covariate
 dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl)
 # dtfold.prob = predict(dtfold.model, testset, type = "prob")
 dtfold.pred = predict(dtfold.model, testset, probability = T)
@@ -160,7 +160,7 @@ dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "pre
 dtfold.confusion.matrix
 
 # 10-fold cross validation con random forest
-# TODO: vedere che covariate e il perchè
+# TODO: vedere che covariate e il perche'
 rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl)
 # rffold.prob = predict(rffold.model, testset, type = "prob")
 rffold.pred = predict(rffold.model, testset, probability = T)
