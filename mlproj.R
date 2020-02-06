@@ -91,6 +91,23 @@ ggplot(dataset, aes(x = Temp, color = Type, fill = Type)) + geom_density(alpha =
 # --> teniamo questo --> SBAM, sulle Y distinguo 4 classi, sulle X 2
 ggplot(dataset, aes(x = Temp, y = AbsMagn, color = Type)) + geom_point()
 
+
+###### vedere se sono piu carini questi ################
+featurePlot(x = dataset.scaled[,1:4], y = dataset.scaled[,7] ,
+            plot = "box",
+            scales=list(x=list(relation="free"), y=list(relation="free")),
+            auto.key=list(columns=3))
+
+featurePlot(x = dataset.scaled[,1:4], y = dataset.scaled[,7] ,
+            plot = "density",
+            scales=list(x=list(relation="free"), y=list(relation="free")),
+            auto.key=list(columns=3))
+
+featurePlot(x = dataset.scaled[,1:4], y = dataset.scaled[,7] ,
+            plot = "pairs",
+            auto.key=list(columns=3))
+
+
 #### considerazioni su attributi categorici
 ggplot(dataset, aes(x = AbsMagn, color = Type, fill = Type)) + geom_density(alpha = 0.2) + theme_minimal()
 barplot(table(dataset$SpectrClass, dataset$Type), legend = levels(dataset$SpectrClass), main = "Title")
@@ -378,7 +395,7 @@ ggplot(plot_dtfoldpr, aes(x=Recall, y=Precision)) +
 
 # 10-fold per random forest con multi ROC
 
-rffold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rf",trControl = trainControl)
+rffold.model = train(Type ~ AbsMagn + Rad, data = trainset, method = "rf",trControl = trainControl)
 rffold.prob = predict(rffold.model, testset, type = "prob")
 rffold.pred = predict(rffold.model, testset, probability = T)
 rffold.confusion.matrix = confusionMatrix(rffold.pred, testset$Type, mode = "prec_recall")
@@ -429,4 +446,22 @@ dotplot(cv.values)
 svmfold_roc$AUC[1]$SVM$macro
 dtfold_roc$AUC[1]$DT$macro
 rffold_roc$AUC[1]$RF$macro
+
+
+
+
+
+
+
+######### feature selection random forest #############
+# define the control using a random forest selection function
+control <- rfeControl(functions=rfFuncs, method="cv", number=10)
+# run the RFE algorithm
+results <- rfe(dataset.scaled, dataset.scaled$Type, sizes=c(1:6), rfeControl=control)
+# summarize the results
+print(results)
+# list the chosen features
+predictors(results)
+# plot the results
+plot(results, type=c("g", "o"))
 
