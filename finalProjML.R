@@ -112,6 +112,14 @@ type.plotByAbsMagnSpectrClass
 
 # TODO: spiegare scarto colore
 # mi aspetto che colore sia coerente con lo spettro ed e' quindi sufficiente utilizzare quest'ultimo; da dimostrare
+##### PROVA CORRELAZIONE Color e SpectrClass ###########
+dmy = dummyVars(" ~ .", data = dataset.scaled)
+dataset.scaled.dummy = data.frame(predict(dmy, newdata = dataset.scaled))
+# matriciona bestia della madonna
+correlationMatrixDummy = corrplot(cor(dataset.scaled.dummy[,5:(ncol(dataset.scaled.dummy)-6)]))
+correlationMatrixDummy
+
+
 
 #### SPLIT DATASET
 
@@ -153,21 +161,21 @@ rf.confusion.matrix
 
 # 10-fold cross validation con svm
 trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T, summaryFunction=multiClassSummary)
-svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear", trControl = trainControl)
+svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear", trControl = trainControl, metric = "ROC")
 svmfold.pred = predict(svmfold.model, testset, probability = T)
 svmfold.confusion.matrix = confusionMatrix(svmfold.pred, testset$Type, mode = "prec_recall")
 svmfold.confusion.matrix
 
 # 10-fold cross validation con decistion tree
 # TODO: vedere perche' usiamo le due covariate
-dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl)
+dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl, metric = "ROC")
 dtfold.pred = predict(dtfold.model, testset, probability = T)
 dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "prec_recall")
 dtfold.confusion.matrix
 
 # 10-fold cross validation con random forest
 # TODO: vedere che covariate e il perche'
-rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl)
+rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl, metric = "ROC")
 rffold.pred = predict(rffold.model, testset, probability = T)
 rffold.confusion.matrix = confusionMatrix(rffold.pred, testset$Type, mode = "prec_recall")
 rffold.confusion.matrix
@@ -275,3 +283,16 @@ ROC.results.merge$TPR = as.numeric(as.character(ROC.results.merge$TPR))
 # TODO: vedere come fare le linee a partire da (0,0)
 ggplot(data=ROC.results.merge, aes(x=FPR, y=TPR, group = Method, colour = Method)) +
   geom_line(size = 1.5) + geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1),colour='grey', linetype = 'dotdash')
+
+# differenze tra i modelli prodotti dalla 10-fold cv ... potrebbe avere senso il confronto sui fold
+cv.values = resamples(list(svm=svmfold.model, dt = dtfold.model, rf = rffold.model)) 
+dotplot(cv.values, metric = "AUC") 
+# TODO: 1 - dobbiamo farlo sui fold?
+# TODO: 2 - dobbiamo farlo su quali misure?
+# TODO: 3 - è corretto prendere le Mean_..?
+bwplot(cv.values) 
+# ho capito come leggerle ma boh
+splom(cv.values,metric="AUC") 
+splom(cv.values,metric="Accuracy") 
+
+
