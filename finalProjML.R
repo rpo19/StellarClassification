@@ -16,6 +16,7 @@ if(install_packs){
   install.packages("rattle")
   install.packages("rpart.plot")
   install.packages("RColorBrewer")
+  install.packages("MLmetrics")
 }
 
 
@@ -33,6 +34,7 @@ library("rpart")
 library("rattle")
 library("rpart.plot")
 library("RColorBrewer")
+library("MLmetrics")
 
 #### https://www.kaggle.com/deepu1109/star-dataset
 

@@ -149,7 +149,7 @@ svm.table
 svm.result1 = confusionMatrix(svm.pred, testset$Type)
 svm.result1
 # confusion matrix with precision and recall
-svm.result2 = confusionMatrix(svm.pred, testset$Type, mode = "prec_recall")
+svm.result2 = confusionmatrix(svm.pred, testset$type, mode = "prec_recall")
 svm.result2
 
 # ROC
@@ -395,7 +395,7 @@ ggplot(plot_dtfoldpr, aes(x=Recall, y=Precision)) +
 
 # 10-fold per random forest con multi ROC
 
-rffold.model = train(Type ~ AbsMagn + Rad, data = trainset, method = "rf",trControl = trainControl)
+rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl)
 rffold.prob = predict(rffold.model, testset, type = "prob")
 rffold.pred = predict(rffold.model, testset, probability = T)
 rffold.confusion.matrix = confusionMatrix(rffold.pred, testset$Type, mode = "prec_recall")
