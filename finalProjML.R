@@ -150,9 +150,8 @@ rf.confusion.matrix
 #### COMPARING MODELS
 
 # 10-fold cross validation con svm
-trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T)
+trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T, summaryFunction=multiClassSummary)
 svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear", trControl = trainControl)
-# svmfold.prob = predict(svmfold.model, testset, type = "prob")
 svmfold.pred = predict(svmfold.model, testset, probability = T)
 svmfold.confusion.matrix = confusionMatrix(svmfold.pred, testset$Type, mode = "prec_recall")
 svmfold.confusion.matrix
@@ -160,7 +159,6 @@ svmfold.confusion.matrix
 # 10-fold cross validation con decistion tree
 # TODO: vedere perche' usiamo le due covariate
 dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl)
-# dtfold.prob = predict(dtfold.model, testset, type = "prob")
 dtfold.pred = predict(dtfold.model, testset, probability = T)
 dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "prec_recall")
 dtfold.confusion.matrix
@@ -168,7 +166,6 @@ dtfold.confusion.matrix
 # 10-fold cross validation con random forest
 # TODO: vedere che covariate e il perche'
 rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl)
-# rffold.prob = predict(rffold.model, testset, type = "prob")
 rffold.pred = predict(rffold.model, testset, probability = T)
 rffold.confusion.matrix = confusionMatrix(rffold.pred, testset$Type, mode = "prec_recall")
 rffold.confusion.matrix
@@ -263,16 +260,16 @@ colnames(macro.plot) = c("SVM", "DT", "RF")
 
 barplot(macro.plot)
 
-# TODO: fare grafico con solo macro (fatto?)
-
+# plot riassuntivo delle macro per tutti e tre i modelli
 ROC.results.merge = cbind(1-ROC.results$Specificity$SVM$macro, ROC.results$Sensitivity$SVM$macro, "SVM")
-ROC.results.merge = rbind(ROC.results.merge, cbind(1-ROC.results$Specificity$DT$macro, ROC.results$Sensitivity$SVM$macro, "DT"))
-ROC.results.merge = rbind(ROC.results.merge, cbind(1-ROC.results$Specificity$RF$macro, ROC.results$Sensitivity$SVM$macro, "RF"))
+ROC.results.merge = rbind(ROC.results.merge, cbind(1-ROC.results$Specificity$DT$macro, ROC.results$Sensitivity$DT$macro, "DT"))
+ROC.results.merge = rbind(ROC.results.merge, cbind(1-ROC.results$Specificity$RF$macro, ROC.results$Sensitivity$RF$macro, "RF"))
 colnames(ROC.results.merge) = c("FPR", "TPR", "Method")
 ROC.results.merge = data.frame(ROC.results.merge)
 ROC.results.merge$Method = factor(ROC.results.merge$Method)
+ROC.results.merge$FPR = as.numeric(as.character(ROC.results.merge$FPR))
+ROC.results.merge$TPR = as.numeric(as.character(ROC.results.merge$TPR))
 
+# TODO: vedere come fare le linee a partire da (0,0)
 ggplot(data=ROC.results.merge, aes(x=FPR, y=TPR, group = Method, colour = Method)) +
-  geom_line(aes(group = Method))
-
-
+  geom_line(size = 1.5) + geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1),colour='grey', linetype = 'dotdash')
