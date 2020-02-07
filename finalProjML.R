@@ -101,7 +101,7 @@ type.distributionAbsMagn
 type.distributionTemp # dopo le seguenti osservazioni, notiamo che potremmo usare un modello svm per classificare con queste due features
 
 # considerazioni su covariate categoriche
-type.barplotSpectrClass = barplot(table(dataset$SpectrClass, dataset$Type), legend = levels(dataset$SpectrClass), main = "Title") 
+type.barplotSpectrClass = barplot(table(dataset$SpectrClass, dataset$Type), legend = levels(dataset$SpectrClass), main = "SpectrClass by Type") 
 # notiamo che anche la covariata SpectrClass distingue bene Red Dwarf e White Dwarf.
 # SpectrClass potrebbe quindi essere usata insieme ad altre covariate numeriche per modelli che gestiscono features miste                                                                                                        
 
