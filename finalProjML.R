@@ -166,21 +166,21 @@ rf.confusion.matrix
 
 # 10-fold cross validation con svm
 trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T, summaryFunction=multiClassSummary)
-svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear", trControl = trainControl, metric = "ROC")
+svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear", trControl = trainControl, metric = "logLoss")
 svmfold.pred = predict(svmfold.model, testset, probability = T)
 svmfold.confusion.matrix = confusionMatrix(svmfold.pred, testset$Type, mode = "prec_recall")
 svmfold.confusion.matrix
 
 # 10-fold cross validation con decistion tree
 # TODO: vedere perche' usiamo le due covariate
-dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl, metric = "ROC")
+dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl, metric = "logLoss")
 dtfold.pred = predict(dtfold.model, testset, probability = T)
 dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "prec_recall")
 dtfold.confusion.matrix
 
 # 10-fold cross validation con random forest
 # TODO: vedere che covariate e il perche'
-rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl, metric = "ROC")
+rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl, metric = "logLoss")
 rffold.pred = predict(rffold.model, testset, probability = T)
 rffold.confusion.matrix = confusionMatrix(rffold.pred, testset$Type, mode = "prec_recall")
 rffold.confusion.matrix
