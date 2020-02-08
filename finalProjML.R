@@ -1,4 +1,4 @@
-install_packs = FALSE
+install_packs = F
 
 if(install_packs){
   # Install and load necessary packages
@@ -9,7 +9,7 @@ if(install_packs){
   install.packages("stringr")
   install.packages("caret")
   install.packages("multiROC")
-  install.packages("C50")
+  #install.packages("C50")
   install.packages("dummies")
   install.packages("randomForest")
   install.packages("rpart")
@@ -27,7 +27,7 @@ library("scales")
 library("stringr")
 library("caret")
 library("multiROC")
-library("C50")
+#library("C50")
 library("dummies")
 library("randomForest")
 library("rpart") 
@@ -41,15 +41,12 @@ library("MLmetrics")
 #### PREPARAZIONE DATASET
 
 # TODO: valutare se togliere dal dataset la colonna colore
-setwd("./") # TODO: settare working dir to current dir
 dataset = read.csv("stars.csv")
 colnames(dataset) = c("Temp", "Lum", "Rad", "AbsMagn", "Type", "Color", "SpectrClass")
 dataset = dataset[, c(1,2,3,4,6,7,5)]
 dataset$Type = factor(dataset$Type)
 types = c("BrownDwarf", "RedDwarf", "WhiteDwarf","MainSequence", "Supergiant", "Hypergiant")
 dataset$Type = factor(sapply(dataset$Type, function (x) { types[x]}))
-# scaling dataset
-dataset.scaled = data.frame(cbind(scale(dataset[,1:4]), dataset[,5:7]))
 
 # cambio livelli SpectrClass secondo la giusta classificazione
 dataset$SpectrClass = factor(dataset$SpectrClass, levels=c("O", "B", "A", "F", "G", "K", "M"))
@@ -68,6 +65,9 @@ sortWordStr = function(str){
 dataset$Color = sapply(dataset$Color, sortWordStr)
 dataset$Color = factor(dataset$Color)
 
+# scaling dataset
+dataset.scaled = data.frame(cbind(scale(dataset[,1:4]), dataset[,5:7]))
+
 #### ANALISI ESPLORATIVA
 
 # verifica distribuzione della classe target
@@ -79,7 +79,8 @@ type.distributionBarPlot # La distribuzione delle classi risulta bilanciata
 
 # verifica correlazione tra le covariate numeriche
 dataset.cor = cor(dataset[, 1:4])
-correlationMatrix = corrplot(dataset.cor, addCoef.col = T) # non ci sono covariate fortemente correlate ## TODO: 0.69 e' tanto?????
+correlationMatrix = corrplot(dataset.cor, addCoef.col = T)
+# non ci sono covariate fortemente correlate fuorche' AbsMagn e Lum
 correlationMatrix
 
 # verifico la separazione delle classi in base a coppie di covariate
@@ -98,10 +99,12 @@ type.plotByAbsMagnTemp # AbsMagn e Temp sono le features che separano linearment
 type.distributionAbsMagn = ggplot(dataset.scaled, aes(x = AbsMagn, color = Type, fill = Type)) + geom_density(alpha = 0.2) + theme_minimal()
 type.distributionTemp = ggplot(dataset.scaled[dataset.scaled$Type %in% c("RedDwarf", "WhiteDwarf"),], aes(x = Temp, color = Type, fill = Type)) + geom_density(alpha = 0.2) + theme_minimal()
 type.distributionAbsMagn
-type.distributionTemp # dopo le seguenti osservazioni, notiamo che potremmo usare un modello svm per classificare con queste due features
+type.distributionTemp
+# dopo le seguenti osservazioni, notiamo che potremmo usare un modello svm per classificare con queste due features
 
 # considerazioni su covariate categoriche
-type.barplotSpectrClass = barplot(table(dataset$SpectrClass, dataset$Type), legend = levels(dataset$SpectrClass), main = "SpectrClass by Type") 
+type.barplotSpectrClass = barplot(table(dataset$SpectrClass, dataset$Type),
+                                  legend = levels(dataset$SpectrClass), main = "SpectrClass by Type") # TODO: mettere palette
 # notiamo che anche la covariata SpectrClass distingue bene Red Dwarf e White Dwarf.
 # SpectrClass potrebbe quindi essere usata insieme ad altre covariate numeriche per modelli che gestiscono features miste                                                                                                        
 
@@ -117,7 +120,9 @@ dmy = dummyVars(" ~ .", data = dataset.scaled)
 dataset.scaled.dummy = data.frame(predict(dmy, newdata = dataset.scaled))
 # matriciona bestia della madonna
 correlationMatrixDummy = corrplot(cor(dataset.scaled.dummy[,5:(ncol(dataset.scaled.dummy)-6)]))
-correlationMatrixDummy
+correlationMatrixDummy # ridurre al minimo indispensabili
+
+# sono quasi tutte correlate quindi usiamo la SpectrClass 
 
 
 
@@ -289,7 +294,7 @@ cv.values = resamples(list(svm=svmfold.model, dt = dtfold.model, rf = rffold.mod
 dotplot(cv.values, metric = "AUC") 
 # TODO: 1 - dobbiamo farlo sui fold?
 # TODO: 2 - dobbiamo farlo su quali misure?
-# TODO: 3 - è corretto prendere le Mean_..?
+# TODO: 3 - ? corretto prendere le Mean_..?
 bwplot(cv.values) 
 # ho capito come leggerle ma boh
 splom(cv.values,metric="AUC") 
