@@ -116,14 +116,14 @@ type.plotByAbsMagnSpectrClass
 # TODO: spiegare scarto colore
 # mi aspetto che colore sia coerente con lo spettro ed e' quindi sufficiente utilizzare quest'ultimo; da dimostrare
 ##### PROVA CORRELAZIONE Color e SpectrClass ###########
-dmy = dummyVars(" ~ .", data = dataset.scaled)
-dataset.scaled.dummy = data.frame(predict(dmy, newdata = dataset.scaled))
+dmy = dummyVars(" ~ Temp + Lum + Rad + AbsMagn + Color + SpectrClass", data = dataset.scaled)
+dataset.scaled.dummy = cbind(data.frame(predict(dmy, newdata = dataset.scaled)), dataset.scaled$Type)
+colnames(dataset.scaled.dummy)[ncol(dataset.scaled.dummy)] = "Type"
 # matriciona bestia della madonna
-correlationMatrixDummy = corrplot(cor(dataset.scaled.dummy[,5:(ncol(dataset.scaled.dummy)-6)]))
+correlationMatrixDummy = corrplot(cor(dataset.scaled.dummy[,5:(ncol(dataset.scaled.dummy)-1)]))
 correlationMatrixDummy # ridurre al minimo indispensabili
 
 # sono quasi tutte correlate quindi usiamo la SpectrClass 
-
 
 
 #### SPLIT DATASET
@@ -299,5 +299,3 @@ bwplot(cv.values)
 # ho capito come leggerle ma boh
 splom(cv.values,metric="AUC") 
 splom(cv.values,metric="Accuracy") 
-
-
