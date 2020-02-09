@@ -137,7 +137,7 @@ testset = dataset.scaled[ind == 2,]
 trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = T, classProbs = T, summaryFunction=multiClassSummary)
 
 # training di un modello con svm
-svmfold.model = train(Type ~ Temp + AbsMagn, data = trainset, method = "svmLinear2", trControl = trainControl, metric = "Accuracy")
+svmfold.model = train(Type ~ Temp + AbsMagn + Rad, data = trainset, method = "svmLinear2", trControl = trainControl, metric = "Accuracy")
 svmfold.pred = predict(svmfold.model, testset, type = "raw")
 svmfold.confusion.matrix = confusionMatrix(svmfold.pred, testset$Type, mode = "prec_recall")
 svmfold.confusion.matrix
