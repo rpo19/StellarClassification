@@ -144,7 +144,7 @@ svmfold.confusion.matrix
 
 # training di un modello con decistion tree
 # TODO: vedere perche' usiamo le due covariate
-dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl, metric = "Accuracy")
+dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl, tuneLength = 5, metric = "Accuracy")
 dtfold.pred = predict(dtfold.model, testset, type = "raw")
 dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "prec_recall")
 dtfold.confusion.matrix
