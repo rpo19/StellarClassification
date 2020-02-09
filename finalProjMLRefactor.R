@@ -301,4 +301,12 @@ performance.measures.plot$Model = factor(performance.measures.plot$Model, levels
 performance.measures.plot$Measure = factor(performance.measures.plot$Measure, levels=c("Prec", "Rec", "F1"))
 
 ggplot(performance.measures.plot, aes(fill=Measure, y=Value, x=Model)) + 
-  geom_bar(position="dodge", stat="identity")
+  geom_bar(position="dodge", stat="identity", width=0.5)
+
+
+#### Accuracy
+
+svmfold.confusion.matrix$overall[1]
+dtfold.confusion.matrix$overall[1]
+rffold.confusion.matrix$overall[1]
+
