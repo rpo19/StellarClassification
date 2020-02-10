@@ -111,16 +111,14 @@ type.barplotSpectrClass = barplot(table(dataset$SpectrClass, dataset$Type),
 type.plotByAbsMagnSpectrClass = ggplot(dataset, aes(x = SpectrClass, y = AbsMagn, color = Type)) + geom_point() + scale_y_reverse()
 type.plotByAbsMagnSpectrClass
 
-# TODO: spiegare scarto colore
 # mi aspetto che colore sia coerente con lo spettro ed e' quindi sufficiente utilizzare quest'ultimo; da dimostrare
 ##### PROVA CORRELAZIONE Color e SpectrClass ###########
 dmy = dummyVars(" ~ Temp + Lum + Rad + AbsMagn + Color + SpectrClass", data = dataset.scaled)
 dataset.scaled.dummy = cbind(data.frame(predict(dmy, newdata = dataset.scaled)), dataset.scaled$Type)
 colnames(dataset.scaled.dummy)[ncol(dataset.scaled.dummy)] = "Type"
-# matriciona bestia della madonna
-correlationMatrixDummy = corrplot(cor(dataset.scaled.dummy[,5:(ncol(dataset.scaled.dummy)-1)]))
+# matrice correlazione completa (con dummy variables per categoriche)
+correlationMatrixDummy = corrplot(cor(dataset.scaled.dummy[,1:(ncol(dataset.scaled.dummy)-1)]))
 correlationMatrixDummy # ridurre al minimo indispensabili
-
 # sono quasi tutte correlate quindi usiamo la SpectrClass 
 
 
