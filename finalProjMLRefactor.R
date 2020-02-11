@@ -102,8 +102,7 @@ type.distributionTemp
 
 # considerazioni su covariate categoriche
 type.barplotSpectrClass = barplot(table(dataset$SpectrClass, dataset$Type),
-                                  legend = levels(dataset$SpectrClass), main = "SpectrClass by Type",
-                                  col = c("#eef9bf", "#a7e9af", "#75b79e", "#6a8caf", "#6e5773", "#f9fcfb", "#d45d79"))
+                                  legend = levels(dataset$SpectrClass), main = "SpectrClass by Type") # TODO: mettere palette
 # notiamo che anche la covariata SpectrClass distingue bene Red Dwarf e White Dwarf.
 # SpectrClass potrebbe quindi essere usata insieme ad altre covariate numeriche per modelli che gestiscono features miste                                                                                                        
 
@@ -112,14 +111,16 @@ type.barplotSpectrClass = barplot(table(dataset$SpectrClass, dataset$Type),
 type.plotByAbsMagnSpectrClass = ggplot(dataset, aes(x = SpectrClass, y = AbsMagn, color = Type)) + geom_point() + scale_y_reverse()
 type.plotByAbsMagnSpectrClass
 
+# TODO: spiegare scarto colore
 # mi aspetto che colore sia coerente con lo spettro ed e' quindi sufficiente utilizzare quest'ultimo; da dimostrare
 ##### PROVA CORRELAZIONE Color e SpectrClass ###########
 dmy = dummyVars(" ~ Temp + Lum + Rad + AbsMagn + Color + SpectrClass", data = dataset.scaled)
 dataset.scaled.dummy = cbind(data.frame(predict(dmy, newdata = dataset.scaled)), dataset.scaled$Type)
 colnames(dataset.scaled.dummy)[ncol(dataset.scaled.dummy)] = "Type"
-# matrice correlazione completa (con dummy variables per categoriche)
-correlationMatrixDummy = corrplot(cor(dataset.scaled.dummy[,1:(ncol(dataset.scaled.dummy)-1)]))
+# matriciona bestia della madonna
+correlationMatrixDummy = corrplot(cor(dataset.scaled.dummy[,5:(ncol(dataset.scaled.dummy)-1)]))
 correlationMatrixDummy # ridurre al minimo indispensabili
+
 # sono quasi tutte correlate quindi usiamo la SpectrClass 
 
 
@@ -143,7 +144,7 @@ svmfold.confusion.matrix
 
 # training di un modello con decistion tree
 # TODO: vedere perche' usiamo le due covariate
-dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl, tuneLength = 5, metric = "Accuracy")
+dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl, metric = "Accuracy")
 dtfold.pred = predict(dtfold.model, testset, type = "raw")
 dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "prec_recall")
 dtfold.confusion.matrix
@@ -268,6 +269,7 @@ bwplot(cv.values)
 # ho capito come leggerle ma boh
 splom(cv.values,metric="AUC") 
 splom(cv.values,metric="Accuracy") 
+cv.timings = data.frame(cv.values$timings)
 
 #### Macro measures
 
@@ -283,21 +285,22 @@ recall.measures = c(mean(svm.data.conf.matrix$Recall), mean(dt.data.conf.matrix$
 f1.measure = c(mean(svm.data.conf.matrix$F1), mean(dt.data.conf.matrix$F1), mean(rf.data.conf.matrix$F1))
 model.labels = c("SVM", "DT", "RF")
 performance.measures = data.frame(model.labels, precision.measures, recall.measures, f1.measure)
-colnames(performance.measures) = c("Model", "Precision", "Recall", "F1")
 
-performance.measures
+performance.measures = cbind(performance.measures, c(ROC.results$AUC$SVM$macro, ROC.results$AUC$DT$macro, ROC.results$AUC$RF$macro), 
+                             c(svmfold.confusion.matrix$overall[1], dtfold.confusion.matrix$overall[1], rffold.confusion.matrix$overall[1]))
+colnames(performance.measures) = c("Model", "Precision", "Recall", "F1", "AUC", "Acc")
 
 # plot format per le misure dei modelli
-model.labels = c("SVM", "SVM", "SVM", "DT", "DT", "DT", "RF", "RF", "RF")
-perf.measure.labels = c("Prec", "Rec", "F1", "Prec", "Rec", "F1", "Prec", "Rec", "F1")
-perf.measure.values = c(mean(svm.data.conf.matrix$Precision), mean(svm.data.conf.matrix$Recall), mean(svm.data.conf.matrix$F1),
-                        mean(dt.data.conf.matrix$Precision), mean(dt.data.conf.matrix$Recall), mean(dt.data.conf.matrix$F1),
-                        mean(rf.data.conf.matrix$Precision), mean(rf.data.conf.matrix$Recall), mean(rf.data.conf.matrix$F1))
+model.labels = c("SVM", "SVM", "SVM", "SVM", "SVM", "DT", "DT", "DT", "DT", "DT", "RF", "RF", "RF", "RF", "RF")
+perf.measure.labels = c("Prec", "Rec", "F1", "AUC", "Acc", "Prec", "Rec", "F1", "AUC", "Acc", "Prec", "Rec", "F1", "AUC", "Acc")
+perf.measure.values = c(mean(svm.data.conf.matrix$Precision), mean(svm.data.conf.matrix$Recall), mean(svm.data.conf.matrix$F1), ROC.results$AUC$SVM$macro, svmfold.confusion.matrix$overall[1],
+                        mean(dt.data.conf.matrix$Precision), mean(dt.data.conf.matrix$Recall), mean(dt.data.conf.matrix$F1), ROC.results$AUC$DT$macro, dtfold.confusion.matrix$overall[1],
+                        mean(rf.data.conf.matrix$Precision), mean(rf.data.conf.matrix$Recall), mean(rf.data.conf.matrix$F1), ROC.results$AUC$RF$macro, rffold.confusion.matrix$overall[1])
 
 performance.measures.plot = data.frame(model.labels, perf.measure.labels, perf.measure.values)
 colnames(performance.measures.plot) = c("Model", "Measure", "Value")
 performance.measures.plot$Model = factor(performance.measures.plot$Model, levels=c("SVM", "DT", "RF"))
-performance.measures.plot$Measure = factor(performance.measures.plot$Measure, levels=c("Prec", "Rec", "F1"))
+performance.measures.plot$Measure = factor(performance.measures.plot$Measure, levels=c("Prec", "Rec", "F1", "AUC", "Acc"))
 
 ggplot(performance.measures.plot, aes(fill=Measure, y=Value, x=Model)) + 
   geom_bar(position="dodge", stat="identity", width=0.5)
