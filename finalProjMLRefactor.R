@@ -38,7 +38,6 @@ library("MLmetrics")
 
 #### PREPARAZIONE DATASET
 
-# TODO: valutare se togliere dal dataset la colonna colore
 dataset = read.csv("stars.csv")
 colnames(dataset) = c("Temp", "Lum", "Rad", "AbsMagn", "Type", "Color", "SpectrClass")
 dataset = dataset[, c(1,2,3,4,6,7,5)]
@@ -75,13 +74,13 @@ type.distributionTable
 type.distributionBarPlot = ggplot(dataset, aes(Type))+ geom_bar(aes(fill = Type))
 type.distributionBarPlot # La distribuzione delle classi risulta bilanciata
 
-# verifica correlazione tra le covariate numeriche
+# verifica correlazione tra le features numeriche
 dataset.cor = cor(dataset[, 1:4])
 correlationMatrix = corrplot(dataset.cor, addCoef.col = T)
-# non ci sono covariate fortemente correlate fuorche' AbsMagn e Lum
+# non ci sono features fortemente correlate fuorche' AbsMagn e Lum
 correlationMatrix
 
-# verifico la separazione delle classi in base a coppie di covariate
+# verifico la separazione delle classi in base a coppie di features
 type.plotPairs = featurePlot(x = dataset.scaled[,1:4], y = dataset.scaled[,7] ,
                              plot = "pairs",
                              auto.key=list(columns=3))
@@ -91,7 +90,8 @@ type.plotByAbsMagnRad = ggplot(dataset.scaled, aes(x = Rad, y = AbsMagn, color =
 type.plotByAbsMagnTemp = ggplot(dataset.scaled, aes(x = Temp, y = AbsMagn, color = Type)) + geom_point()
 type.plotByAbsMagnLum
 type.plotByAbsMagnRad
-type.plotByAbsMagnTemp # AbsMagn e Temp sono le features che separano linearmente i punti
+type.plotByAbsMagnTemp 
+# AbsMagn e Temp sono le features che separano linearmente i punti
 # Approfondendo le distribuzioni si puo' verificare AbsMagn divide il target abbastanza bene,
 # tranne per l'overlapping che c'e' tra RedDwarf e WhiteDwarf
 type.distributionAbsMagn = ggplot(dataset.scaled, aes(x = AbsMagn, color = Type, fill = Type)) + geom_density(alpha = 0.2) + theme_minimal()
@@ -100,27 +100,24 @@ type.distributionAbsMagn
 type.distributionTemp
 # dopo le seguenti osservazioni, notiamo che potremmo usare un modello svm per classificare con queste due features
 
-# considerazioni su covariate categoriche
+# considerazioni su features categoriche
 type.barplotSpectrClass = barplot(table(dataset$SpectrClass, dataset$Type),
-                                  legend = levels(dataset$SpectrClass), main = "SpectrClass by Type") # TODO: mettere palette
-# notiamo che anche la covariata SpectrClass distingue bene Red Dwarf e White Dwarf.
-# SpectrClass potrebbe quindi essere usata insieme ad altre covariate numeriche per modelli che gestiscono features miste                                                                                                        
+                                  legend = levels(dataset$SpectrClass), main = "SpectrClass by Type")
+# notiamo che anche la feature SpectrClass distingue bene Red Dwarf e White Dwarf.
+# SpectrClass potrebbe quindi essere usata insieme ad altre features numeriche con modelli che gestiscono features miste                                                                                                        
 
 # altro punto di vista per confermare quanto appena detto
 # https://en.wikipedia.org/wiki/Stellar_classification
 type.plotByAbsMagnSpectrClass = ggplot(dataset, aes(x = SpectrClass, y = AbsMagn, color = Type)) + geom_point() + scale_y_reverse()
 type.plotByAbsMagnSpectrClass
 
-# TODO: spiegare scarto colore
-# mi aspetto che colore sia coerente con lo spettro ed e' quindi sufficiente utilizzare quest'ultimo; da dimostrare
-##### PROVA CORRELAZIONE Color e SpectrClass ###########
+# mi aspetto che colore sia coerente con lo spettro ed e' quindi sufficiente utilizzare quest'ultimo
+# correlazione Color spectrClass
 dmy = dummyVars(" ~ Temp + Lum + Rad + AbsMagn + Color + SpectrClass", data = dataset.scaled)
 dataset.scaled.dummy = cbind(data.frame(predict(dmy, newdata = dataset.scaled)), dataset.scaled$Type)
 colnames(dataset.scaled.dummy)[ncol(dataset.scaled.dummy)] = "Type"
-# matriciona bestia della madonna
 correlationMatrixDummy = corrplot(cor(dataset.scaled.dummy[,5:(ncol(dataset.scaled.dummy)-1)]))
-correlationMatrixDummy # ridurre al minimo indispensabili
-
+correlationMatrixDummy
 # sono quasi tutte correlate quindi usiamo la SpectrClass 
 
 
@@ -143,14 +140,12 @@ svmfold.confusion.matrix = confusionMatrix(svmfold.pred, testset$Type, mode = "p
 svmfold.confusion.matrix
 
 # training di un modello con decistion tree
-# TODO: vedere perche' usiamo le due covariate
 dtfold.model = train(Type ~ AbsMagn + SpectrClass, data = trainset, method = "rpart",trControl = trainControl, metric = "Accuracy")
 dtfold.pred = predict(dtfold.model, testset, type = "raw")
 dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "prec_recall")
 dtfold.confusion.matrix
 
 # training di un modello con random forest
-# TODO: vedere che covariate e il perche'
 rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl, metric = "Accuracy")
 rffold.pred = predict(rffold.model, testset, type = "raw")
 rffold.confusion.matrix = confusionMatrix(rffold.pred, testset$Type, mode = "prec_recall")
@@ -173,7 +168,7 @@ ROC.results.plot <- plot_roc_data(ROC.results)
 PR.results = multi_pr(ROC.data, force_diag=T)
 PR.results.plot <- plot_pr_data(PR.results)
 
-# plot ROC
+# plot ROC SVM
 ggplot(ROC.results.plot[ROC.results.plot$Method=="SVM",], aes(x = 1-Specificity, y=Sensitivity)) +
   xlab("FPR") +
   ylab("TPR") +
@@ -186,6 +181,7 @@ ggplot(ROC.results.plot[ROC.results.plot$Method=="SVM",], aes(x = 1-Specificity,
         legend.title=element_blank(), 
         legend.background = element_rect(fill=NULL, size=0.5, 
                                          linetype="solid", colour ="black"))
+# plot ROC DT
 ggplot(ROC.results.plot[ROC.results.plot$Method=="DT",], aes(x = 1-Specificity, y=Sensitivity)) +
   xlab("FPR") +
   ylab("TPR") +
@@ -198,6 +194,7 @@ ggplot(ROC.results.plot[ROC.results.plot$Method=="DT",], aes(x = 1-Specificity, 
         legend.title=element_blank(), 
         legend.background = element_rect(fill=NULL, size=0.5, 
                                          linetype="solid", colour ="black"))
+# plot ROC RF
 ggplot(ROC.results.plot[ROC.results.plot$Method=="RF",], aes(x = 1-Specificity, y=Sensitivity)) +
   xlab("FPR") +
   ylab("TPR") +
@@ -211,7 +208,7 @@ ggplot(ROC.results.plot[ROC.results.plot$Method=="RF",], aes(x = 1-Specificity, 
         legend.background = element_rect(fill=NULL, size=0.5, 
                                          linetype="solid", colour ="black"))
 
-# plot PR
+# plot PR SVM
 ggplot(PR.results.plot[PR.results.plot$Method =="SVM",], aes(x=Recall, y=Precision)) + 
   geom_path(aes(color = Group, linetype=Method), size=1.5) + 
   theme_bw() + 
@@ -220,6 +217,7 @@ ggplot(PR.results.plot[PR.results.plot$Method =="SVM",], aes(x=Recall, y=Precisi
         legend.title=element_blank(), 
         legend.background = element_rect(fill=NULL, size=0.5, 
                                          linetype="solid", colour ="black"))
+# plot PR DT
 ggplot(PR.results.plot[PR.results.plot$Method =="DT",], aes(x=Recall, y=Precision)) + 
   geom_path(aes(color = Group, linetype=Method), size=1.5) + 
   theme_bw() + 
@@ -228,6 +226,7 @@ ggplot(PR.results.plot[PR.results.plot$Method =="DT",], aes(x=Recall, y=Precisio
         legend.title=element_blank(), 
         legend.background = element_rect(fill=NULL, size=0.5, 
                                          linetype="solid", colour ="black"))
+# plot PR RF
 ggplot(PR.results.plot[PR.results.plot$Method =="RF",], aes(x=Recall, y=Precision)) + 
   geom_path(aes(color = Group, linetype=Method), size=1.5) + 
   theme_bw() + 
@@ -255,25 +254,21 @@ ROC.results.merge$Method = factor(ROC.results.merge$Method)
 ROC.results.merge$FPR = as.numeric(as.character(ROC.results.merge$FPR))
 ROC.results.merge$TPR = as.numeric(as.character(ROC.results.merge$TPR))
 
-# TODO: vedere come fare le linee a partire da (0,0)
 ggplot(data=ROC.results.merge, aes(x=FPR, y=TPR, group = Method, colour = Method)) +
   geom_line(size = 1.5) + geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1),colour='grey', linetype = 'dotdash')
 
-# differenze tra i modelli prodotti dalla 10-fold cv ... potrebbe avere senso il confronto sui fold
+# differenze tra i modelli prodotti dalla 10-fold cv
 cv.values = resamples(list(svm=svmfold.model, dt = dtfold.model, rf = rffold.model)) 
 dotplot(cv.values, metric = "AUC") 
-# TODO: 1 - dobbiamo farlo sui fold?
-# TODO: 2 - dobbiamo farlo su quali misure?
-# TODO: 3 - ? corretto prendere le Mean_..?
 bwplot(cv.values) 
-# ho capito come leggerle ma boh
 splom(cv.values,metric="AUC") 
 splom(cv.values,metric="Accuracy") 
 cv.timings = data.frame(cv.values$timings)
+cv.timings
 
 #### Macro measures
 
-# table format per le misure dei modelli
+# formato tabella per le misure dei modelli
 svm.data.conf.matrix = data.frame(svmfold.confusion.matrix$byClass)
 svm.data.conf.matrix[is.na(svm.data.conf.matrix)] = 0
 dt.data.conf.matrix = data.frame(dtfold.confusion.matrix$byClass)
@@ -289,8 +284,9 @@ performance.measures = data.frame(model.labels, precision.measures, recall.measu
 performance.measures = cbind(performance.measures, c(ROC.results$AUC$SVM$macro, ROC.results$AUC$DT$macro, ROC.results$AUC$RF$macro), 
                              c(svmfold.confusion.matrix$overall[1], dtfold.confusion.matrix$overall[1], rffold.confusion.matrix$overall[1]))
 colnames(performance.measures) = c("Model", "Precision", "Recall", "F1", "AUC", "Acc")
+performance.measures
 
-# plot format per le misure dei modelli
+# tabella per costruire plot per le misure dei modelli
 model.labels = c("SVM", "SVM", "SVM", "SVM", "SVM", "DT", "DT", "DT", "DT", "DT", "RF", "RF", "RF", "RF", "RF")
 perf.measure.labels = c("Prec", "Rec", "F1", "AUC", "Acc", "Prec", "Rec", "F1", "AUC", "Acc", "Prec", "Rec", "F1", "AUC", "Acc")
 perf.measure.values = c(mean(svm.data.conf.matrix$Precision), mean(svm.data.conf.matrix$Recall), mean(svm.data.conf.matrix$F1), ROC.results$AUC$SVM$macro, svmfold.confusion.matrix$overall[1],
