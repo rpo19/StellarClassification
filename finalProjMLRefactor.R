@@ -103,9 +103,7 @@ type.distributionTemp
 # considerazioni su features categoriche
 type.barplotSpectrClass = barplot(table(dataset$SpectrClass, dataset$Type),
                                   legend = levels(dataset$SpectrClass), main = "SpectrClass by Type",
-                                  col = c("#eef9bf", "#a7e9af", "#75b79e", "#6a8caf", "#6e5773", "#f9fcfb", "#d45d79"))
-# notiamo che anche la covariata SpectrClass distingue bene Red Dwarf e White Dwarf.
-# SpectrClass potrebbe quindi essere usata insieme ad altre covariate numeriche per modelli che gestiscono features miste                                                                                                        
+                                  col = c("#eef9bf", "#a7e9af", "#75b79e", "#6a8caf", "#6e5773", "#f9fcfb", "#d45d79"))                                                                                                      
 
 # altro punto di vista per confermare quanto appena detto
 # https://en.wikipedia.org/wiki/Stellar_classification
