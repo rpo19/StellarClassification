@@ -144,6 +144,9 @@ dtfold.pred = predict(dtfold.model, testset, type = "raw")
 dtfold.confusion.matrix = confusionMatrix(dtfold.pred, testset$Type, mode = "prec_recall")
 dtfold.confusion.matrix
 
+# confusion matrix sul modello ottenuto dalla 10-fold
+confusionMatrix(dtfold.model)
+
 # training di un modello con random forest
 rffold.model = train(Type ~ ., data = trainset, method = "rf",trControl = trainControl, metric = "Accuracy")
 rffold.pred = predict(rffold.model, testset, type = "raw")
